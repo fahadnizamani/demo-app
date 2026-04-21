@@ -35,7 +35,7 @@ public class UserController {
 
     @GetMapping("/test")
     public String testApi() {
-        return "CI/CD is now working!";
+        return "CI/CD is now working!.....";
     }
 
 }
