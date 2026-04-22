@@ -33,9 +33,9 @@ public class UserController {
         return "User deleted successfully";
     }
 
-    @GetMapping("/test")
+    @GetMapping("/test-api")
     public String testApi() {
-        return "CI/CD is now working!.....";
+        return "CI/CD is now working!..";
     }
 
 }
