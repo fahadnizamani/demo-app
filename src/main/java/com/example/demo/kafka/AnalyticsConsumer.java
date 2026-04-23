@@ -10,4 +10,10 @@ public class AnalyticsConsumer {
     public void trackUser(UserRegisteredEvent event) {
         System.out.println("Tracking new user: " + event.getUsername());
     }
+
+    @KafkaListener(topics = "order-created", groupId = "analytics-group")
+    public void track(OrderCreatedEvent event) {
+        System.out.println("Tracking order: " + event.getOrderId());
+    }
+
 }
