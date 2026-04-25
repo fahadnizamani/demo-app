@@ -13,9 +13,11 @@ import java.util.stream.Collectors;
 public class CartService {
 
     private final CartRepository cartRepo;
+    private final UserRepository userRepository;
 
-    public CartService(CartRepository cartRepo) {
+    public CartService(CartRepository cartRepo,UserRepository userRepository) {
         this.cartRepo = cartRepo;
+        this.userRepository = userRepository;
     }
 
     @Cacheable(value = "cart", key = "#userId")
@@ -67,6 +69,35 @@ public class CartService {
         cartRepo.save(cart);
     }
 
+
+    public CartDTO getCartByEmail(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return getCart(user.getId());
+    }
+
+    public CartDTO addToCartByEmail(String email, CartItemDTO item) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return addToCart(user.getId(), item);
+    }
+
+    public CartDTO removeFromCartByEmail(String email, Long productId) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return removeFromCart(user.getId(), productId);
+    }
+
+    public void clearCartByEmail(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        clearCart(user.getId());
+    }
+
     private Cart createCart(Long userId) {
         Cart cart = new Cart();
         cart.setUserId(userId);
@@ -81,4 +112,7 @@ public class CartService {
                         .collect(Collectors.toList())
         );
     }
+
+
+
 }

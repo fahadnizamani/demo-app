@@ -2,13 +2,18 @@ package com.example.demo.service;
 
 import com.example.demo.dto.AuthResponse;
 import com.example.demo.dto.RegisterRequest;
+import com.example.demo.entity.RefreshToken;
 import com.example.demo.entity.User;
 import com.example.demo.kafka.UserEventProducer;
 import com.example.demo.kafka.UserRegisteredEvent;
+import com.example.demo.repository.RefreshTokenRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.security.JwtService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class AuthService {
@@ -17,15 +22,18 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final UserEventProducer producer;
+    private final RefreshTokenRepository tokenRepository;
 
     public AuthService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        JwtService jwtService,
-                       UserEventProducer producer) {
+                       UserEventProducer producer,
+                       RefreshTokenRepository tokenRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.producer = producer;
+        this.tokenRepository = tokenRepository;
     }
 
     public String register(RegisterRequest request) {
@@ -71,7 +79,54 @@ public class AuthService {
         String accessToken = jwtService.generateToken(email);
         String refreshToken = jwtService.generateRefreshToken(email);
 
+
+        RefreshToken tokenEntity = new RefreshToken();
+        tokenEntity.setToken(refreshToken);
+        tokenEntity.setUserEmail(user.getEmail());
+        tokenEntity.setDeviceInfo("web");
+        tokenEntity.setValid(true);
+        tokenEntity.setExpiryDate(LocalDateTime.now().plusDays(7));
+
+        tokenRepository.save(tokenEntity);
+
         return new AuthResponse(accessToken, refreshToken);
+    }
+
+    /*
+    public void invalidateRefreshToken(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setRefreshToken(null);
+        userRepository.save(user);
+    }
+*/
+    public void invalidateAllRefreshTokens(String email) {
+
+        List<RefreshToken> tokens = tokenRepository.findByUserEmailAndValidTrue(email);
+
+        for (RefreshToken t : tokens) {
+            t.setValid(false);
+        }
+
+        tokenRepository.saveAll(tokens);
+    }
+
+    public AuthResponse refreshToken(String refreshToken) {
+
+        RefreshToken token = tokenRepository.findByToken(refreshToken)
+                .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
+
+        if (!token.isValid() || token.getExpiryDate().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Expired or invalid refresh token");
+        }
+
+        User user = userRepository.findByEmail(token.getUserEmail())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        String newAccessToken = jwtService.generateToken(user.getEmail());
+
+        return new AuthResponse(newAccessToken, refreshToken);
     }
 
 

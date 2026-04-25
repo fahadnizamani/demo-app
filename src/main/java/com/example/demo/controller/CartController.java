@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import com.example.demo.dto.CartDTO;
 import com.example.demo.dto.CartItemDTO;
 import com.example.demo.service.CartService;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -15,26 +16,35 @@ public class CartController {
         this.service = service;
     }
 
-    @GetMapping("/{userId:\\d+}")
-    public CartDTO getCart(@PathVariable Long userId) {
-        return service.getCart(userId);
+    // ✅ GET current user's cart
+    @GetMapping
+    public CartDTO getCart(Authentication authentication) {
+        String email = authentication.getName();
+        return service.getCartByEmail(email);
     }
 
-    @PostMapping("/{userId:\\d+}")
-    public CartDTO addToCart(@PathVariable Long userId,
+    // ✅ ADD item
+    @PostMapping
+    public CartDTO addToCart(Authentication authentication,
                              @RequestBody CartItemDTO item) {
-        return service.addToCart(userId, item);
+        String email = authentication.getName();
+        System.out.print("Add to cart for "+email+" CartItemDTO ="+item.getProductId());
+        return service.addToCartByEmail(email, item);
     }
 
-    @DeleteMapping("/{userId:\\d+}/{productId:\\d+}")
-    public CartDTO remove(@PathVariable Long userId,
+    // ✅ REMOVE item
+    @DeleteMapping("/{productId}")
+    public CartDTO remove(Authentication authentication,
                           @PathVariable Long productId) {
-        return service.removeFromCart(userId, productId);
+        String email = authentication.getName();
+        return service.removeFromCartByEmail(email, productId);
     }
 
-    @DeleteMapping("/{userId:\\d+}")
-    public String clear(@PathVariable Long userId) {
-        service.clearCart(userId);
+    // ✅ CLEAR cart
+    @DeleteMapping
+    public String clear(Authentication authentication) {
+        String email = authentication.getName();
+        service.clearCartByEmail(email);
         return "Cart cleared";
     }
 }

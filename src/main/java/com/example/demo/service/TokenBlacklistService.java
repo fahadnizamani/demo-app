@@ -16,10 +16,12 @@ public class TokenBlacklistService {
     }
 
     public void blacklistToken(String token, long expirationMillis) {
-        redisTemplate.opsForValue().set(token, "blacklisted", expirationMillis, TimeUnit.MILLISECONDS);
+        redisTemplate.opsForValue()
+                .set("blacklist:" + token, true, expirationMillis, TimeUnit.MILLISECONDS);
     }
 
     public boolean isBlacklisted(String token) {
-        return redisTemplate.hasKey(token);
+        return redisTemplate.hasKey("blacklist:" + token);
     }
+
 }

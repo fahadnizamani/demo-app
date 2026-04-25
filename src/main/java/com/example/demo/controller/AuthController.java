@@ -8,6 +8,7 @@ import com.example.demo.security.JwtService;
 import com.example.demo.service.AuthService;
 import com.example.demo.service.TokenBlacklistService;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -47,6 +48,14 @@ public class AuthController {
         return authService.login(request.getEmail(), request.getPassword());
     }
 
+
+
+    @PostMapping("/refresh")
+    public AuthResponse refresh(@RequestBody RefreshRequest request) {
+        return authService.refreshToken(request.getRefreshToken());
+    }
+
+    /*
     @PostMapping("/refresh")
     public String refresh(@RequestBody RefreshRequest request) {
 
@@ -62,6 +71,10 @@ public class AuthController {
 
         throw new RuntimeException("Invalid refresh token");
     }
+    */
+
+
+
 /*
     @PostMapping("/logout")
     public String logout(HttpServletRequest request) {
@@ -78,23 +91,20 @@ public class AuthController {
 */
 
     @PostMapping("/logout")
-    public String logout(HttpServletRequest request, @RequestBody RefreshRequest refreshRequest) {
+    public String logout(HttpServletRequest request,
+                         Authentication authentication) {
 
         String authHeader = request.getHeader("Authorization");
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
 
-            long expiration = jwtService.getRemainingExpiration(token);
-
-            tokenBlacklistService.blacklistToken(token, expiration);
+            long expiry = jwtService.getExpirationMillis(token);
+            tokenBlacklistService.blacklistToken(token, expiry);
         }
 
-        // Blacklist the refresh token as well
-        if (refreshRequest != null && refreshRequest.getRefreshToken() != null) {
-            long refreshExpiration = jwtService.getRemainingExpiration(refreshRequest.getRefreshToken());
-            tokenBlacklistService.blacklistToken(refreshRequest.getRefreshToken(), refreshExpiration);
-        }
+        String email = authentication.getName();
+        authService.invalidateAllRefreshTokens(email);
 
         return "Logged out successfully";
     }

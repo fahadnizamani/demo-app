@@ -48,7 +48,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         String token = authHeader.substring(7);
         String email = null;
-        logger.info("token = ", token);
+        logger.info("token = {}", token);
         try {
             email = jwtService.extractEmail(token);
         } catch (Exception e) {
@@ -72,7 +72,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             }
 
             if (tokenBlacklistService.isBlacklisted(token)) {
-                filterChain.doFilter(request, response);
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token is blacklisted");
                 return;
             }else if (jwtService.isTokenValid(token, email)) {
 

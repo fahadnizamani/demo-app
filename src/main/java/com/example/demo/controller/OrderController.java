@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import com.example.demo.entity.Order;
 import com.example.demo.service.OrderService;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -14,8 +15,10 @@ public class OrderController {
         this.service = service;
     }
 
-    @PostMapping("/{userId:\\d+}")
-    public Order placeOrder(@PathVariable Long userId) {
-        return service.placeOrder(userId);
+    // ✅ Place order for logged-in user
+    @PostMapping
+    public Order placeOrder(Authentication authentication) {
+        String email = authentication.getName();
+        return service.placeOrderByEmail(email);
     }
 }

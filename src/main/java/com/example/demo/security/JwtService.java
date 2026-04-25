@@ -3,9 +3,12 @@ package com.example.demo.security;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Service;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
 
 import java.security.Key;
 import java.util.Date;
+
 
 @Service
 public class JwtService {
@@ -56,6 +59,19 @@ public class JwtService {
                 .getExpiration();
 
         return expiration.getTime() - System.currentTimeMillis();
+    }
+
+    public long getExpirationMillis(String token) {
+        Date expiration = extractAllClaims(token).getExpiration();
+        return expiration.getTime() - System.currentTimeMillis();
+    }
+
+    private Claims extractAllClaims(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(getSigningKey()) // your existing key method
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
     }
 
 }

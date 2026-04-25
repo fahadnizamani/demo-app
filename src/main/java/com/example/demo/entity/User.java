@@ -20,6 +20,9 @@ public class User implements Serializable {
     @Column(nullable = false)
     private String role; // e.g. ROLE_USER, ROLE_ADMIN
 
+    private String refreshToken;
+
+
     // getters and setters
     public Long getId() {
         return id;
@@ -60,4 +63,13 @@ public class User implements Serializable {
     public void setRole(String role) {
         this.role = role;
     }
+
+    public String getRefreshToken() {
+        return refreshToken;
+    }
+
+    public void setRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
 }
