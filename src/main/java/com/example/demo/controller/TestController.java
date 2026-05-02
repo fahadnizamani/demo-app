@@ -48,4 +48,10 @@ public class TestController {
         return "Hello ADMIN | " + getTokenInfo(request);
     }
 
+    @GetMapping("/test-user")
+    public String test(@RequestHeader("X-User-Email") String email) {
+        System.out.print("X-User-Email header value: " + email);
+        return email;
+    }
+
 }
