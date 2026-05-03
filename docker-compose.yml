@@ -1,18 +1,21 @@
-version: '3'
+version: '3.8'
+
 services:
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
     ports:
       - "9092:9092"
       - "29092:29092"
-    depends_on:
-      - zookeeper
     environment:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
@@ -22,29 +25,45 @@ services:
 
   kafka-ui:
     image: provectuslabs/kafka-ui
-    ports:
-      - "8085:8080"
+    container_name: kafka-ui
     depends_on:
       - kafka
+    ports:
+      - "8085:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
 
   redis:
     image: redis:7
+    container_name: redis
     ports:
       - "6379:6379"
 
   app:
     image: fahadnizamani/demo-app:latest
-    ports:
-      - "8080:8080"
+    container_name: demo-app
     depends_on:
       - kafka
       - redis
+    ports:
+      - "8080:8080"
     environment:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5432/demo_db
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: root
+
+  gateway:
+    image: fahadnizamani/spring-cloud-api-gateway:latest
+    container_name: api-gateway
+    depends_on:
+      - app
+      - redis
+    ports:
+      - "8081:8081"
+    environment:
+      BACKEND_URL: http://app:8080
+      REDIS_HOST: redis
+      JWT_SECRET: mysecretkeymysecretkeymysecretkey123
