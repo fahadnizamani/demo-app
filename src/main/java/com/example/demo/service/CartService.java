@@ -3,8 +3,11 @@ package com.example.demo.service;
 import com.example.demo.dto.*;
 import com.example.demo.entity.*;
 import com.example.demo.repository.*;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.cache.annotation.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -14,10 +17,17 @@ public class CartService {
 
     private final CartRepository cartRepo;
     private final UserRepository userRepository;
+    private final WebClient webClient;
+    private final HttpServletRequest request;
 
-    public CartService(CartRepository cartRepo,UserRepository userRepository) {
+    public CartService(CartRepository cartRepo,
+                       UserRepository userRepository,
+                       WebClient webClient,
+                       HttpServletRequest request) {
         this.cartRepo = cartRepo;
         this.userRepository = userRepository;
+        this.webClient = webClient;
+        this.request = request;
     }
 
     @Cacheable(value = "cart", key = "#userId")
@@ -30,6 +40,31 @@ public class CartService {
 
     @CachePut(value = "cart", key = "#userId")
     public CartDTO addToCart(Long userId, CartItemDTO itemDTO) {
+
+        ProductDTO product;
+
+        try {
+            String correlationId = request.getHeader("X-Correlation-Id");
+
+            product = webClient.get()
+                    .uri("http://localhost:8082/api/products/" + itemDTO.getProductId())
+                    .header("X-Correlation-Id", correlationId)
+                    .retrieve()
+                    .bodyToMono(ProductDTO.class)
+                    .block();
+
+        } catch (WebClientResponseException.NotFound ex) {
+            throw new RuntimeException("Product not found");
+        }
+
+        if (product == null) {
+            throw new RuntimeException("Product not found");
+        }
+
+        if (product.getQuantity() < itemDTO.getQuantity()) {
+            throw new RuntimeException("Insufficient inventory");
+        }
+
         Cart cart = cartRepo.findByUserId(userId)
                 .orElseGet(() -> createCart(userId));
 
@@ -38,7 +73,9 @@ public class CartService {
                 .findFirst();
 
         if (existing.isPresent()) {
-            existing.get().setQuantity(existing.get().getQuantity() + itemDTO.getQuantity());
+            existing.get().setQuantity(
+                    existing.get().getQuantity() + itemDTO.getQuantity()
+            );
         } else {
             CartItem item = new CartItem();
             item.setProductId(itemDTO.getProductId());
