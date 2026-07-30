@@ -38,4 +38,8 @@ public class UserController {
         return "CI/CD is now working!..";
     }
 
+    @GetMapping("/by-email")
+    public UserResponseDTO getUserByEmail(@RequestParam String email) {
+        return userService.getUserByEmail(email);
+    }
 }
