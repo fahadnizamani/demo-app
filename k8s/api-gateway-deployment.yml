@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+        - name: api-gateway
+          image: fahadnizamani/spring-cloud-api-gateway:latest
+          ports:
+            - containerPort: 8081
+
+          env:
+            - name: BACKEND_URL
+              value: "http://demo-app:8080"
+
+            - name: PRODUCT_SERVICE_URL
+              value: "http://host.docker.internal:8082"
+
+            - name: REDIS_HOST
+              value: "redis"
+
+            - name: REDIS_PORT
+              value: "6379"
+
+            - name: JWT_SECRET
+              value: "mysecretkeymysecretkeymysecretkey123"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+spec:
+  selector:
+    app: api-gateway
+  ports:
+    - protocol: TCP
+      port: 8081
+      targetPort: 8081
+      nodePort: 30081
+  type: NodePort
