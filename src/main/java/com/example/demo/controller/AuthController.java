@@ -48,8 +48,6 @@ public class AuthController {
         return authService.login(request.getEmail(), request.getPassword());
     }
 
-
-
     @PostMapping("/refresh")
     public AuthResponse refresh(@RequestBody RefreshRequest request) {
         return authService.refreshToken(request.getRefreshToken());
